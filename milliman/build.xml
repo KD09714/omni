@@ -1,7 +1,8 @@
 <!-- Modification History -->
 
+<!-- Dharmendra Kumar   03/10/2014      Accomodate New Install without uninstalling old install -->
 <!-- Dharmendra Kumar	03/02/2014	Initial coding to auto-deploy milliman package -->
-<!-- version 2014.0.1 -->
+<!-- version 2014.0.2 -->
 <project name="DeployOnIIS" basedir=".." default="MachineInfo">
 <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
 	<tstamp>
@@ -17,7 +18,6 @@
 	<record name="${patchdir}/${timestamp}/log/install.debug-${timestamp-HHmm}.log" loglevel="verbose" />
 	
 	<property environment="env" />
-	<property name="app" value="${virtualdir}" />
 	<property name="iishome" value="C:/inetpub/wwwroot" />
 	<property name="emailuser" value="${env.USERNAME}@sungard.com" />
 	<mkdir dir="${patchdir}/${timestamp}/new" />
@@ -26,7 +26,17 @@
 		<echo message="TIMESTAMP : ${timestamp-HHmm}"/>
 		<echo message="SERVER    : ${env.COMPUTERNAME}" />
 		<echo message="DOMAIN    : ${env.USERDOMAIN}" />
-		<echo message="USER      : ${env.USERNAME}" />		
+		<echo message="USER      : ${env.USERNAME}" />
+	</target>
+	
+	<target name="FindInstallDir" if="skipuninstall">
+		<property file="${patchdir}/${timestamp}/new/version.cfg"/>
+		<propertyregex property="virtuald"
+               input="${ProductVersion}"
+               regexp="\."
+               replace=""
+               global="true" />
+		<property name="virtualdir" value="Milliman_${virtuald}" />
 	</target>
 	
 	<target name="VerifyPackage">
@@ -60,7 +70,7 @@
 		<echo message="Restart completed." />
 	</target>
 
-	<target name="BackupCfgFiles" >
+	<target name="BackupCfgFiles">
 		<for list="${configtobackup}" delimiter=";" param = "cfgfilewpath">
 			<sequential>
 				<if>
@@ -70,7 +80,7 @@
 					</then>	
 				</if>
 				<echo message="Backing up the current installated cfg file.." />
-				<copy todir="${patchdir}/${timestamp}/backup" file="${iishome}/${app}/@{cfgfilewpath}" preservelastmodified="true" overwrite="true" force="true" />
+				<copy todir="${patchdir}/${timestamp}/backup" file="${iishome}/${lastinstalldir}/@{cfgfilewpath}" preservelastmodified="true" overwrite="true" force="true" />
 			</sequential>
 		</for>
 	</target>
@@ -84,13 +94,14 @@
 	</target>
 	
 	<target name="InstallNewPackage">
+		<property name="app" value="${virtualdir}" />
 		<echo message="cd /d ${patchdir}/${timestamp}/new${line.separator}msiexec TARGETVDIR=${app} TARGETAPPPOOL=${applicationpool} /i${package} /passive" file="tools/install.cmd" force="true" />
 		<exec executable="cmd" failonerror="true" dir="tools">
 			<arg value="/c install.cmd" />
 		</exec>
 	</target>
 	
-	<target name="UninstallLastPackage">
+	<target name="UninstallLastPackage" unless="skipuninstall">
 		<echo message="cd /d ${patchdir}/${lastinstall}/installed${line.separator}msiexec /x${package} /passive" file="tools/uninstall.cmd" force="true" />
 		<exec executable="cmd" failonerror="true" dir="tools">
 			<arg value="/c uninstall.cmd" />
@@ -123,7 +134,7 @@
 		</for>
 	</target>
 	
-	<target name="Install" depends="MachineInfo, CopyPackage, VerifyPackage, BackupCfgFiles, StopAppPool, UninstallLastPackage, InstallNewPackage, SetupConfigFiles, ProvideSpPerm, StartAppPool">
+	<target name="Install" depends="MachineInfo, CopyPackage, VerifyPackage, FindInstallDir, BackupCfgFiles, StopAppPool, UninstallLastPackage, InstallNewPackage, SetupConfigFiles, ProvideSpPerm, StartAppPool">
 		<echo message="Installation Completed for ${package}." />
 		<property name="subject" value="Installation Completed for ${package} on ${env.COMPUTERNAME}" />
 		
@@ -131,7 +142,7 @@
 		<move file="${patchdir}/${timestamp}/new" tofile="${patchdir}/${timestamp}/installed" />
 		
 		<antcall target="EmailNotification" />
-		<echo message="lastinstall=${timestamp}" file="cfg/lastinstall.cfg" force="true" />
+		<echo message="lastinstall=${timestamp}${line.separator}lastinstalldir=${app}" file="cfg/lastinstall.cfg" force="true" />
 	</target>
 
 	<target name="EmailNotification" if="emailsmtpserver">
