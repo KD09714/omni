@@ -1,8 +1,9 @@
 <!-- Modification History -->
 
+<!-- Dharmendra Kumar   03/28/2014      Update the reference of virtual dir.                    -->
 <!-- Dharmendra Kumar   03/10/2014      Accomodate New Install without uninstalling old install -->
 <!-- Dharmendra Kumar	03/02/2014	Initial coding to auto-deploy milliman package -->
-<!-- version 2014.0.2 -->
+<!-- version 2014.0.3 -->
 <project name="DeployOnIIS" basedir=".." default="MachineInfo">
 <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
 	<tstamp>
@@ -112,6 +113,9 @@
 		<for list="${configtobackup}" delimiter=";" param = "cfgfilewpath">
 			<sequential>
 				<copy file="${patchdir}/${timestamp}/backup/@{cfgfilewpath}" tofile="${iishome}/${app}/@{cfgfilewpath}" overwrite="true" force="true"/>
+				<replace file="${iishome}/${app}/@{cfgfilewpath}">
+					<replacefilter token="${lastinstalldir}" value="${app}" />
+				</replace>
 			</sequential>
 		</for>
 	</target>
