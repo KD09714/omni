@@ -1,0 +1,163 @@
+<!-- Modification History -->
+
+<!-- Dharmendra Kumar	03/02/2014	Initial coding to auto-deploy milliman package -->
+<!-- version 2014.0.1 -->
+<project name="DeployOnIIS" basedir=".." default="MachineInfo">
+<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+	<tstamp>
+		<format property="timestamp" pattern="yyyyMMdd"/>
+		<format property="timestamp-HHmm" pattern="yyyyMMdd-HHmm"/>
+	</tstamp>
+	
+	<property file="cfg/deploy.cfg"/>
+	<property file="cfg/lastinstall.cfg" />
+	<property name="patchdir" value="D:/Milliman" />
+    <mkdir dir="${patchdir}/${timestamp}/log" />
+	<record name="${patchdir}/${timestamp}/log/install-${timestamp-HHmm}.log" />
+	<record name="${patchdir}/${timestamp}/log/install.debug-${timestamp-HHmm}.log" loglevel="verbose" />
+	
+	<property environment="env" />
+	<property name="app" value="${virtualdir}" />
+	<property name="iishome" value="C:/inetpub/wwwroot" />
+	<property name="emailuser" value="${env.USERNAME}@sungard.com" />
+	<mkdir dir="${patchdir}/${timestamp}/new" />
+	
+	<target name="MachineInfo">
+		<echo message="TIMESTAMP : ${timestamp-HHmm}"/>
+		<echo message="SERVER    : ${env.COMPUTERNAME}" />
+		<echo message="DOMAIN    : ${env.USERDOMAIN}" />
+		<echo message="USER      : ${env.USERNAME}" />		
+	</target>
+	
+	<target name="VerifyPackage">
+		<if>
+			<available file="${patchdir}/${timestamp}/new/${package}" />
+			<then>
+				<property name="package.exists" value="true" />
+				<echo message="${package} Exists for Installation....!!" />
+			</then>
+			<else>
+				<fail message="${patchdir}/${timestamp}/new/${package} does not Exists..!!!" />
+			</else>
+		</if>
+	</target>
+	
+	<target name="StopAppPool" if="applicationpool">
+		<exec executable="cmd" failonerror="true">
+			<arg value="/c" />
+			<arg value="appcmd stop apppool /apppool.name:${applicationpool}" />
+		</exec>
+	</target>
+	
+	<target name="StartAppPool" if="applicationpool">
+		<exec executable="cmd" failonerror="true">
+			<arg value="/c" />
+			<arg value="appcmd start apppool /apppool.name:${applicationpool}" />
+		</exec>
+	</target>
+	
+	<target name="RestartAppPool" depends="StopAppPool, StartAppPool">
+		<echo message="Restart completed." />
+	</target>
+
+	<target name="BackupCfgFiles" >
+		<for list="${configtobackup}" delimiter=";" param = "cfgfilewpath">
+			<sequential>
+				<if>
+					<available file="${patchdir}/${timestamp}/backup/@{cfgfilewpath}" />
+					<then>
+						<move file="${patchdir}/${timestamp}/backup/@{cfgfilewpath}" tofile="${patchdir}/${timestamp}/backup/@{cfgfilewpath}-${timestamp-HHmm}" preservelastmodified="true" />
+					</then>	
+				</if>
+				<echo message="Backing up the current installated cfg file.." />
+				<copy todir="${patchdir}/${timestamp}/backup" file="${iishome}/${app}/@{cfgfilewpath}" preservelastmodified="true" overwrite="true" force="true" />
+			</sequential>
+		</for>
+	</target>
+
+	<target name="CopyPackage" if="packagesource">
+		<copy todir="${patchdir}/${timestamp}/new" force="true" overwrite="true" preservelastmodified="true">
+			<fileset dir="${packagesource}" >
+				<include name="*" />
+			</fileset>
+		</copy>
+	</target>
+	
+	<target name="InstallNewPackage">
+		<echo message="cd /d ${patchdir}/${timestamp}/new${line.separator}msiexec TARGETVDIR=${app} TARGETAPPPOOL=${applicationpool} /i${package} /passive" file="tools/install.cmd" force="true" />
+		<exec executable="cmd" failonerror="true" dir="tools">
+			<arg value="/c install.cmd" />
+		</exec>
+	</target>
+	
+	<target name="UninstallLastPackage">
+		<echo message="cd /d ${patchdir}/${lastinstall}/installed${line.separator}msiexec /x${package} /passive" file="tools/uninstall.cmd" force="true" />
+		<exec executable="cmd" failonerror="true" dir="tools">
+			<arg value="/c uninstall.cmd" />
+		</exec>
+	</target>
+
+	<target name="SetupConfigFiles">
+		<for list="${configtobackup}" delimiter=";" param = "cfgfilewpath">
+			<sequential>
+				<copy file="${patchdir}/${timestamp}/backup/@{cfgfilewpath}" tofile="${iishome}/${app}/@{cfgfilewpath}" overwrite="true" force="true"/>
+			</sequential>
+		</for>
+	</target>
+	
+	<target name="ProvideSpPerm">
+		<for list="${specialdir}" delimiter="|" param="dir-perm">
+			<sequential>
+				<var name="dir" unset="true"/>
+				<for list="@{dir-perm}" delimiter=":" param="value">
+					<sequential>
+						<property name="dir" value="@{value}"/>
+						<var name="perm" unset="true" />
+						<property name="perm" value="@{value}"/>
+					</sequential>
+				</for>
+				<exec executable="cmd" failonerror="true">
+					<arg value="/c icacls &quot;${iishome}/${app}/${dir}&quot; /grant &quot;${perm}&quot;:(CI)(OI)F" />
+				</exec>
+			</sequential>
+		</for>
+	</target>
+	
+	<target name="Install" depends="MachineInfo, CopyPackage, VerifyPackage, BackupCfgFiles, StopAppPool, UninstallLastPackage, InstallNewPackage, SetupConfigFiles, ProvideSpPerm, StartAppPool">
+		<echo message="Installation Completed for ${package}." />
+		<property name="subject" value="Installation Completed for ${package} on ${env.COMPUTERNAME}" />
+		
+		<delete dir="${patchdir}/${timestamp}/installed" />
+		<move file="${patchdir}/${timestamp}/new" tofile="${patchdir}/${timestamp}/installed" />
+		
+		<antcall target="EmailNotification" />
+		<echo message="lastinstall=${timestamp}" file="cfg/lastinstall.cfg" force="true" />
+	</target>
+
+	<target name="EmailNotification" if="emailsmtpserver">
+		<mail mailhost="${emailsmtpserver}" subject="${subject}" from="${emailuser}" tolist="${emailtolist},${defaultemailto}" >
+			<message>Installation log attached.</message>
+			<attachments>
+				<fileset dir="${patchdir}/${timestamp}/log">
+					<include name="install-${timestamp-HHmm}.log"/>
+				</fileset>
+			</attachments>
+		</mail>
+	</target>
+	
+	<target name="Download">
+		<echo message="Connecting to ftp server ${ftphost} :" />
+		<input message="Enter ftp userid [Ex. codemove]?" addproperty="ftpuser" />
+		<input message="Enter password for ${ftpuser}?" addproperty="ftppassword" />
+		<input message="Enter ftp path for package [ relative to ${ftpuser} home directory ]?" addproperty="ftppath" />
+		<ftp action="get" verbose="yes"
+			server="${ftphost}"
+			userid="${ftpuser}"
+			password="${ftppassword}"
+			remotedir="${ftppath}">
+			<fileset dir="${patchdir}/${timestamp}/new">
+				<include name="*" />
+			</fileset>
+		</ftp>
+	</target>
+</project>
