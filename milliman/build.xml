@@ -1,9 +1,10 @@
 <!-- Modification History -->
 
+<!-- Dharmendra Kumar   04/01/2014      Cleanup the old packages.                               -->
 <!-- Dharmendra Kumar   03/28/2014      Update the reference of virtual dir.                    -->
 <!-- Dharmendra Kumar   03/10/2014      Accomodate New Install without uninstalling old install -->
 <!-- Dharmendra Kumar	03/02/2014	Initial coding to auto-deploy milliman package -->
-<!-- version 2014.0.3 -->
+<!-- version 2014.0.4 -->
 <project name="DeployOnIIS" basedir=".." default="MachineInfo">
 <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
 	<tstamp>
@@ -147,6 +148,7 @@
 		
 		<antcall target="EmailNotification" />
 		<echo message="lastinstall=${timestamp}${line.separator}lastinstalldir=${app}" file="cfg/lastinstall.cfg" force="true" />
+		<delete dir="${patchdir}/${lastinstall}" />
 	</target>
 
 	<target name="EmailNotification" if="emailsmtpserver">
