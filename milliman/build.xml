@@ -148,9 +148,14 @@
 		
 		<antcall target="EmailNotification" />
 		<echo message="lastinstall=${timestamp}${line.separator}lastinstalldir=${app}" file="cfg/lastinstall.cfg" force="true" />
-		<delete dir="${patchdir}/${lastinstall}" />
+		<if>
+		<equals arg1="${timestamp}" arg2="${lastinstall}" />
+			<else>
+				<delete dir="${patchdir}/${lastinstall}" />
+			</else>
+		</if>
 	</target>
-
+	
 	<target name="EmailNotification" if="emailsmtpserver">
 		<mail mailhost="${emailsmtpserver}" subject="${subject}" from="${emailuser}" tolist="${emailtolist},${defaultemailto}" >
 			<message>Installation log attached.</message>
