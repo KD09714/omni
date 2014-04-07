@@ -11,7 +11,7 @@
 	<tstamp>
 		<format property="timestamp" pattern="yyyyMMdd"/>
 		<format property="timestamp-HHmm" pattern="yyyyMMdd-HHmm"/>
-		<format property="touch.time" pattern="hh:mm:00" offset="+4" unit="minute"/>
+		<format property="touch.time" pattern="HH:mm:00" offset="+4" unit="minute"/>
 	</tstamp>
 	
 	<property file="cfg/deploy.cfg"/>
