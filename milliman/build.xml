@@ -1,15 +1,17 @@
 <!-- Modification History -->
 
+<!-- Dharmendra Kumar   04/07/2014      Adding task scheduling target.                          -->
 <!-- Dharmendra Kumar   04/01/2014      Cleanup the old packages.                               -->
 <!-- Dharmendra Kumar   03/28/2014      Update the reference of virtual dir.                    -->
 <!-- Dharmendra Kumar   03/10/2014      Accomodate New Install without uninstalling old install -->
 <!-- Dharmendra Kumar	03/02/2014	Initial coding to auto-deploy milliman package -->
-<!-- version 2014.0.4 -->
+<!-- version 2014.0.5 -->
 <project name="DeployOnIIS" basedir=".." default="MachineInfo">
 <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
 	<tstamp>
 		<format property="timestamp" pattern="yyyyMMdd"/>
 		<format property="timestamp-HHmm" pattern="yyyyMMdd-HHmm"/>
+		<format property="touch.time" pattern="hh:mm:00" offset="+4" unit="minute"/>
 	</tstamp>
 	
 	<property file="cfg/deploy.cfg"/>
@@ -181,5 +183,16 @@
 				<include name="*" />
 			</fileset>
 		</ftp>
+	</target>
+	
+	<target name="ScheduleTask">
+		<echo message="${touch.time}" />
+		<exec executable="cmd">
+			<arg value="/c schtasks /DELETE /tn KillMSIEXEC /F" />
+		</exec>
+		
+		<exec executable="cmd">
+			<arg value="/c schtasks /create /tn KillMSIEXEC /tr &quot;cmd /c tskill msiexec&quot; /sc ONCE /st ${touch.time} /ru omni.bhm.bldscm.svc /rp 29gx_PusJFduw5pbPMbpGKhE3od9Un" />
+		</exec>
 	</target>
 </project>
