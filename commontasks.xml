@@ -1,3 +1,8 @@
+<!-- Modification History -->
+
+<!-- 04/27/2014         Dharmendra Kumar  	Added Target to Copy Packages             -->
+<!-- 04/20/2014		Dharmendra Kumar	Initial Coding to Start and Stop Services -->
+<!-- version 2014.0.1 -->
 <project name="CommonTasks" basedir=".." default="MachineInfo">
 <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
 	<tstamp>
@@ -32,5 +37,11 @@
 	
 	<target name="RestartService" depends="StopService, StartService" >
 		<echo message="Restart Completed ..!" />
+	</target>
+
+	<target name="CopyPacakges">
+		<copy todir="${targetdir}" overwrite="true" preservelastmodified="true" force="true" verbose="true">
+			<fileset dir="${sourcedir}">
+		</copy>
 	</target>
 </project>
