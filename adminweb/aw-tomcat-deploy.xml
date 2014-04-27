@@ -1,0 +1,68 @@
+<project name="DeployOnJboss" basedir=".." default="MachineInfo">
+<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+<property file="cfg/tomcat-deploy.cfg" />
+<property environment="env" />
+
+<tstamp>
+	<format property="timestamp" pattern="yyyyMMdd"/>
+	<format property="timestamp-HHmm" pattern="yyyyMMdd-HHmm"/>
+</tstamp>
+	
+<target name="MachineInfo">
+		<echo message="TIMESTAMP : ${timestamp-HHmm}"/>
+		<echo message="SERVER    : ${env.COMPUTERNAME}" />
+		<echo message="DOMAIN    : ${env.USERDOMAIN}" />
+		<echo message="USER      : ${env.USERNAME}" />		
+</target>
+
+<target name="StopService">
+	<exec executable="cmd" failonerror="true">
+		<arg value="/c sc stop ${servicename}" />
+	</exec>
+	<sleep seconds="30"/>
+</target>
+
+<target name="StartService">
+	<exec executable="cmd" failonerror="true">
+		<arg value="/c" />
+		<arg value="sc start ${servicename}" />
+	</exec>
+	<sleep seconds="30"/>
+</target>
+
+<target name="RestartService" depends="StopService, StartService">
+	<echo message="Restart of ${servicename} Completed." />
+</target>
+
+<target name="GetLatestWar">
+	<last id="archive.id">
+		<fileset dir="${warlocation}">
+			<include name="${warname}-*.war"/>
+		</fileset>
+	</last>
+	<basename property="versioned.warname" file="${toString:archive.id}" suffix=".war"/>
+	
+	<copy file="${warlocation}/${versioned.warname}.war" todir="war" overwrite="true" preservelastmodified="true" force="true" verbose="true" />
+	<move file="war/${versioned.warname}.war" tofile="war/${warname}.war" preservelastmodified="true" />
+</target>
+
+<target name="InstallNewWar" depends="GetLatestWar">
+	<copy file="war/${warname}.war" todir="${appl-webapps-base}/webapps" overwrite="true" preservelastmodified="true" force="true" />
+	
+	<echo message="Cleaning up temprory files..." />
+	<!-- Cleanup the directories -->
+	<for list="${dir-to-cleanup}" param = "tempdir">
+		<sequential>
+			<echo message="Cleaning up ${appl-webapps-base}/@{tempdir} directory." />
+			<mkdir dir="${appl-webapps-base}/@{tempdir}" />
+			<delete includeemptydirs="true">
+				<fileset dir="${appl-webapps-base}/@{tempdir}" />
+			</delete>
+		</sequential>
+	</for>
+</target>
+
+<target name="Install" depends="StopService, GetLatestWar, InstallNewWar, StartService" >
+	<echo message="Install completed for ${warname}" />
+</target>
+</project>
