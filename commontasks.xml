@@ -1,0 +1,36 @@
+<project name="CommonTasks" basedir=".." default="MachineInfo">
+<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+	<tstamp>
+		<format property="timestamp" pattern="yyyyMMdd"/>
+		<format property="timestamp-HHmm" pattern="yyyyMMdd-HHmm"/>
+	</tstamp>
+	
+	<property environment="env" />
+	
+	<target name="MachineInfo">
+		<echo message="TIMESTAMP : ${timestamp-HHmm}"/>
+		<echo message="SERVER    : ${env.COMPUTERNAME}" />
+		<echo message="DOMAIN    : ${env.USERDOMAIN}" />
+		<echo message="USER      : ${env.USERNAME}" />		
+	</target>
+		
+	<target name="StopService" >
+		<exec executable="cmd" failonerror="true" >
+			<arg value="/c" />
+			<arg value="sc stop &quot;${servicename}&quot;" />
+		</exec>
+		<sleep seconds="10"/>
+	</target>
+	
+	<target name="StartService" >
+		<exec executable="cmd" failonerror="true" >
+			<arg value="/c" />
+			<arg value="sc start &quot;${servicename}&quot;" />
+		</exec>
+		<sleep seconds="10"/>
+	</target>
+	
+	<target name="RestartService" depends="StopService, StartService" >
+		<echo message="Restart Completed ..!" />
+	</target>
+</project>
