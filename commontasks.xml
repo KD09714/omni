@@ -11,7 +11,7 @@
 	</tstamp>
 	
 	<property environment="env" />
-	
+	<property file="cfg/commontasks.cfg" />
 	<target name="MachineInfo">
 		<echo message="TIMESTAMP : ${timestamp-HHmm}"/>
 		<echo message="SERVER    : ${env.COMPUTERNAME}" />
@@ -39,9 +39,9 @@
 		<echo message="Restart Completed ..!" />
 	</target>
 
-	<target name="CopyPacakges">
+	<target name="CopyPackages">
 		<copy todir="${targetdir}" overwrite="true" preservelastmodified="true" force="true" verbose="true">
-			<fileset dir="${sourcedir}">
+			<fileset dir="${sourcedir}" />
 		</copy>
 	</target>
 </project>
