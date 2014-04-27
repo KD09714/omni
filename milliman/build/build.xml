@@ -1,0 +1,96 @@
+<project name="OOLBuild" basedir=".." default="MachineInfo">
+	<property environment="env" />
+	<property file="${workspace}/Configurations/buildver/${release}.${sp}-buildversion.cfg" />
+	<property file="cfg/archive-milliman.cfg" />
+	<property name="buildnumber" value="00" />
+	
+	<path id="ant.classpath">
+		<fileset dir="${env.ANT_HOME}">
+			<include name="**/*.jar" />
+		</fileset>
+	</path>
+
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
+		<classpath refid="ant.classpath" />
+	</taskdef>
+	
+	<taskdef resource="net/sf/antcontrib/antlib.xml">
+		<classpath refid="ant.classpath" />
+	</taskdef>
+	
+	<tstamp>
+		<format property="timestamp" pattern="yyyyMMdd"/>
+		<format property="timestamp-HHmm" pattern="yyyyMMdd-HHmm"/>
+	</tstamp>
+
+	<target name="MachineInfo">
+		<echo message="TIMESTAMP : ${timestamp-HHmm}"/>
+		<echo message="SERVER    : ${env.COMPUTERNAME}" />
+		<echo message="DOMAIN    : ${env.USERDOMAIN}" />
+		<echo message="USER      : ${env.USERNAME}" />		
+	</target>
+	
+	<target name="GenerateVersion">
+		<if>
+		<equals arg1="${workspacerev}" arg2="${svnrev}" />
+		<then>
+			<property name="newbuildnumber" value="${buildnumber}" />
+		</then>
+		<else>
+			<math result="newbuildnumber" operation="+" operand1="1" operand2="${buildnumber}" datatype="int" />
+		</else>
+		</if>
+		
+		<if>
+		<islessthan arg1="${newbuildnumber}" arg2="10" />
+		<then>
+			<echo message="ProductVersion :${release}.${sp}0${newbuildnumber}${line.separator}AssemblyVersion:${release}.${sp}.0${newbuildnumber}" file="${workspace}/Configurations/version.txt" />
+			<echo message="buildnumber=0${newbuildnumber}${line.separator}workspacerev=${svnrev}" file="${workspace}/Configurations/buildver/${release}.${sp}-buildversion.tmp" />
+			<property name="newbuild" value="0${newbuildnumber}" />
+		</then>
+		<else>
+			<echo message="ProductVersion :${release}.${sp}${newbuildnumber}${line.separator}AssemblyVersion:${release}.${sp}.${newbuildnumber}" file="${workspace}/Configurations/version.txt" />
+			<echo message="buildnumber=${newbuildnumber}${line.separator}workspacerev=${svnrev}" file="${workspace}/Configurations/buildver/${release}.${sp}-buildversion.tmp" />
+			<property name="newbuild" value="${newbuildnumber}" />
+		</else>
+		</if>
+		<echo message="New Build Number : ${newbuildnumber}" />
+		<delete dir="${workspace}/Configurations/Setup/Debug" quiet="true" />
+	</target>
+	
+	<target name="Build" depends="GenerateVersion">
+		<exec executable="cmd" failonerror="true" dir="${workspace}" >
+			<arg value="/c MSbuild.bat ${sourcedir}" />
+		</exec>
+		<move file="${workspace}/Configurations/buildver/${release}.${sp}-buildversion.tmp" tofile="${workspace}/Configurations/buildver/${release}.${sp}-buildversion.cfg" />
+		<echo message="ProductVersion=${release}.${sp}${newbuild}${line.separator}" file="${workspace}/Configurations/Setup/Debug/version.cfg" />
+	</target>
+	
+	<target name="Archive">
+		<property name="archivesourcedir" value="${workspace}/Configurations/Setup/Debug" />
+		<if>
+		<equals arg1="${sp}" arg2="0" />
+		<then>
+			<property name="archivetargetdir" value="${archivetargetbase}/${release}.x" />
+		</then>
+		<else>
+			<property name="archivetargetdir" value="${archivetargetbase}/${release}.${sp}.x" />
+		</else>
+		</if>
+		
+		<copy todir="${archivetargetdir}/${release}.${sp}.${newbuild}" verbose="true" overwrite="true">
+			<fileset dir="${archivesourcedir}" >
+				<include name="setup.exe" />
+				<include name="Milliman_Setup.msi" />
+			</fileset>
+		</copy>
+		
+		<copy todir="${archivetargetdir}/latest" verbose="true" overwrite="true">
+			<fileset dir="${archivesourcedir}" >
+				<include name="setup.exe" />
+				<include name="Milliman_Setup.msi" />
+				<include name="version.cfg" />
+			</fileset>
+		</copy>
+	</target>
+</project>
