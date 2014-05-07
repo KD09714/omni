@@ -1,3 +1,7 @@
+<!-- Modification History -->
+
+<!-- 05/07/2014		Dharmendra Kumar	Handle GenerateVersion in a better way -->
+<!-- version 2014.0.0.1 -->
 <project name="OOLBuild" basedir=".." default="MachineInfo">
 	<property environment="env" />
 	<property file="${workspace}/Configurations/buildver/${release}.${sp}-buildversion.cfg" />
@@ -44,17 +48,17 @@
 		<if>
 		<islessthan arg1="${newbuildnumber}" arg2="10" />
 		<then>
-			<echo message="ProductVersion :${release}.${sp}0${newbuildnumber}${line.separator}AssemblyVersion:${release}.${sp}.0${newbuildnumber}" file="${workspace}/Configurations/version.txt" />
-			<echo message="buildnumber=0${newbuildnumber}${line.separator}workspacerev=${svnrev}" file="${workspace}/Configurations/buildver/${release}.${sp}-buildversion.tmp" />
 			<property name="newbuild" value="0${newbuildnumber}" />
 		</then>
 		<else>
-			<echo message="ProductVersion :${release}.${sp}${newbuildnumber}${line.separator}AssemblyVersion:${release}.${sp}.${newbuildnumber}" file="${workspace}/Configurations/version.txt" />
-			<echo message="buildnumber=${newbuildnumber}${line.separator}workspacerev=${svnrev}" file="${workspace}/Configurations/buildver/${release}.${sp}-buildversion.tmp" />
 			<property name="newbuild" value="${newbuildnumber}" />
 		</else>
 		</if>
-		<echo message="New Build Number : ${newbuildnumber}" />
+		
+		<echo message="ProductVersion :${release}.${sp}${newbuild}${line.separator}AssemblyVersion:${release}.${sp}.${newbuild}" file="${workspace}/Configurations/version.txt" />
+		<echo message="buildnumber=${newbuildnumber}${line.separator}workspacerev=${svnrev}" file="${workspace}/Configurations/buildver/${release}.${sp}-buildversion.tmp" />	
+			
+		<echo message="New Build Number : ${newbuild}" />
 		<delete dir="${workspace}/Configurations/Setup/Debug" quiet="true" />
 	</target>
 	
