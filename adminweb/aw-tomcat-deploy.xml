@@ -1,7 +1,13 @@
+<!-- Modification History-->
+
+<!-- 05/17/2014	   Dharmendra Kumar      Added webapps directory variable -->
+<!-- rev 2014.0.0.1 -->
+
 <project name="DeployOnJboss" basedir=".." default="MachineInfo">
 <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
 <property file="cfg/tomcat-deploy.cfg" />
 <property environment="env" />
+<property name="webapps-dir" value="${warname}" />
 
 <tstamp>
 	<format property="timestamp" pattern="yyyyMMdd"/>
@@ -47,7 +53,7 @@
 </target>
 
 <target name="InstallNewWar" depends="GetLatestWar">
-	<copy file="war/${warname}.war" todir="${appl-webapps-base}/webapps" overwrite="true" preservelastmodified="true" force="true" />
+	<copy file="war/${warname}.war" tofile="${appl-webapps-base}/webapps/${webapps-dir}.war" overwrite="true" preservelastmodified="true" force="true" />
 	
 	<echo message="Cleaning up temprory files..." />
 	<!-- Cleanup the directories -->
