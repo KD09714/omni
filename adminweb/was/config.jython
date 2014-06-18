@@ -1,0 +1,2 @@
+AdminApp.edit('@applicationname@', '[ -MapWebModToVH [["@webmodule@" @war.filename@,WEB-INF/web.xml @virtualhost@ ]]]' )
+AdminConfig.save()
