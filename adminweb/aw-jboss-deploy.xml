@@ -2,7 +2,12 @@
 <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
 <property file="cfg/jboss-deploy.cfg" />
 <property environment="env" />
-
+<property name="failonerror" value="true" />
+<record name="${patchdir}/${timestamp}/log/install-${timestamp-HHmm}.log" />
+<record name="${patchdir}/${timestamp}/log/install.debug-${timestamp-HHmm}.log" loglevel="verbose" />
+<property name="emailuser" value="scmteam@sungard.com" />
+<property name="defaultemailto" value="scmteam@sungard.com" />
+	
 <tstamp>
 	<format property="timestamp" pattern="yyyyMMdd"/>
 	<format property="timestamp-HHmm" pattern="yyyyMMdd-HHmm"/>
@@ -16,14 +21,14 @@
 </target>
 
 <target name="StopService">
-	<exec executable="cmd" failonerror="true">
+	<exec executable="cmd" failonerror="${failonerror}">
 		<arg value="/c sc stop ${jboss-service}" />
 	</exec>
 	<sleep seconds="30"/>
 </target>
 
 <target name="StartService">
-	<exec executable="cmd" failonerror="true">
+	<exec executable="cmd" failonerror="${failonerror}">
 		<arg value="/c" />
 		<arg value="sc start ${jboss-service}" />
 	</exec>
@@ -41,7 +46,6 @@
 		</fileset>
 	</last>
 	<basename property="versioned.warname" file="${toString:archive.id}" suffix=".war"/>
-	
 	<copy file="${warlocation}/${versioned.warname}.war" todir="war" overwrite="true" preservelastmodified="true" force="true" verbose="true" />
 	<move file="war/${versioned.warname}.war" tofile="war/${warname}.war" preservelastmodified="true" />
 </target>
@@ -64,7 +68,22 @@
 	</for>
 </target>
 
+<target name="EmailNotification" if="emailsmtpserver">
+	<mail mailhost="${emailsmtpserver}" subject="${subject}" from="${emailuser}" tolist="${emailtolist},${defaultemailto}" >
+		<message>Installation log attached.</message>
+		<attachments>
+			<fileset dir="${patchdir}/${timestamp}/log">
+				<include name="install-${timestamp-HHmm}.log"/>
+			</fileset>
+		</attachments>
+	</mail>
+</target>
+	
+
 <target name="Install" depends="StopService, GetLatestWar, InstallNewWar, StartService" >
 	<echo message="Install completed for ${warname}" />
+	<property name="subject" value="Installation Completed for ${versioned.warname} on ${env.COMPUTERNAME}" />
+		<antcall target="EmailNotification" />
+		<record name="${patchdir}/${timestamp}/log/install.debug-${timestamp-HHmm}.log" loglevel="verbose" action="stop" />
 </target>
 </project>
