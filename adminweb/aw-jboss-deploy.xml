@@ -3,15 +3,17 @@
 <property file="cfg/jboss-deploy.cfg" />
 <property environment="env" />
 <property name="failonerror" value="true" />
-<record name="${patchdir}/${timestamp}/log/install-${timestamp-HHmm}.log" />
-<record name="${patchdir}/${timestamp}/log/install.debug-${timestamp-HHmm}.log" loglevel="verbose" />
-<property name="emailuser" value="scmteam@sungard.com" />
-<property name="defaultemailto" value="scmteam@sungard.com" />
 	
 <tstamp>
 	<format property="timestamp" pattern="yyyyMMdd"/>
 	<format property="timestamp-HHmm" pattern="yyyyMMdd-HHmm"/>
 </tstamp>
+
+<mkdir dir="log" />
+<record name="${basedir}/log/install-${timestamp-HHmm}.log" />
+<record name="${basedir}/log/install.debug-${timestamp-HHmm}.log" loglevel="verbose" />
+<property name="emailuser" value="scmteam@sungard.com" />
+
 	
 <target name="MachineInfo">
 		<echo message="TIMESTAMP : ${timestamp-HHmm}"/>
@@ -72,7 +74,7 @@
 	<mail mailhost="${emailsmtpserver}" subject="${subject}" from="${emailuser}" tolist="${emailtolist},${defaultemailto}" >
 		<message>Installation log attached.</message>
 		<attachments>
-			<fileset dir="${patchdir}/${timestamp}/log">
+			<fileset dir="${basedir}/log">
 				<include name="install-${timestamp-HHmm}.log"/>
 			</fileset>
 		</attachments>
@@ -84,6 +86,6 @@
 	<echo message="Install completed for ${warname}" />
 	<property name="subject" value="Installation Completed for ${versioned.warname} on ${env.COMPUTERNAME}" />
 		<antcall target="EmailNotification" />
-		<record name="${patchdir}/${timestamp}/log/install.debug-${timestamp-HHmm}.log" loglevel="verbose" action="stop" />
+		<record name="${basedir}/log/install.debug-${timestamp-HHmm}.log" loglevel="verbose" action="stop" />
 </target>
 </project>
