@@ -1,19 +1,27 @@
 <!-- Modification History-->
 
+<!-- 07/26/2014	   Dharmendra Kumar      Added Email notification target -->
 <!-- 05/17/2014	   Dharmendra Kumar      Added webapps directory variable -->
-<!-- rev 2014.0.0.1 -->
+<!-- rev 2014.0.2 -->
 
 <project name="DeployOnJboss" basedir=".." default="MachineInfo">
 <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+
 <property file="cfg/tomcat-deploy.cfg" />
 <property environment="env" />
 <property name="webapps-dir" value="${warname}" />
+<property name="failonerror" value="true" />
+<mkdir dir="log" />
 
 <tstamp>
 	<format property="timestamp" pattern="yyyyMMdd"/>
 	<format property="timestamp-HHmm" pattern="yyyyMMdd-HHmm"/>
 </tstamp>
-	
+
+<record name="${basedir}/log/install-${timestamp-HHmm}.log" />
+<record name="${basedir}/log/install.debug-${timestamp-HHmm}.log" loglevel="verbose" />
+<property name="emailuser" value="scmteam@sungard.com" />
+
 <target name="MachineInfo">
 		<echo message="TIMESTAMP : ${timestamp-HHmm}"/>
 		<echo message="SERVER    : ${env.COMPUTERNAME}" />
@@ -22,14 +30,14 @@
 </target>
 
 <target name="StopService">
-	<exec executable="cmd" failonerror="true">
+	<exec executable="cmd" failonerror="${failonerror}">
 		<arg value="/c sc stop ${servicename}" />
 	</exec>
 	<sleep seconds="30"/>
 </target>
 
 <target name="StartService">
-	<exec executable="cmd" failonerror="true">
+	<exec executable="cmd" failonerror="${failonerror}">
 		<arg value="/c" />
 		<arg value="sc start ${servicename}" />
 	</exec>
@@ -47,7 +55,6 @@
 		</fileset>
 	</last>
 	<basename property="versioned.warname" file="${toString:archive.id}" suffix=".war"/>
-	
 	<copy file="${warlocation}/${versioned.warname}.war" todir="war" overwrite="true" preservelastmodified="true" force="true" verbose="true" />
 	<move file="war/${versioned.warname}.war" tofile="war/${warname}.war" preservelastmodified="true" />
 </target>
@@ -68,7 +75,20 @@
 	</for>
 </target>
 
+<target name="EmailNotification" if="emailsmtpserver">
+	<mail mailhost="${emailsmtpserver}" subject="${subject}" from="${emailuser}" tolist="${emailtolist},${defaultemailto}" >
+		<message>Installation log attached.</message>
+		<attachments>
+			<fileset dir="log">
+				<include name="install-${timestamp-HHmm}.log"/>
+			</fileset>
+		</attachments>
+	</mail>
+</target>
+
 <target name="Install" depends="StopService, GetLatestWar, InstallNewWar, StartService" >
 	<echo message="Install completed for ${warname}" />
+		<property name="subject" value="Installation Completed for ${versioned.warname} on ${env.COMPUTERNAME}" />
+		<antcall target="EmailNotification" />
 </target>
 </project>
