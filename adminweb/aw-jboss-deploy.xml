@@ -82,10 +82,9 @@
 </target>
 	
 
-<target name="Install" depends="StopService, GetLatestWar, InstallNewWar, StartService" >
+<target name="Install" depends="MachineInfo, StopService, GetLatestWar, InstallNewWar, StartService" >
 	<echo message="Install completed for ${warname}" />
 	<property name="subject" value="Installation Completed for ${versioned.warname} on ${env.COMPUTERNAME}" />
 		<antcall target="EmailNotification" />
-		<record name="${basedir}/log/install.debug-${timestamp-HHmm}.log" loglevel="verbose" action="stop" />
 </target>
 </project>
