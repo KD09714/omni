@@ -1,10 +1,12 @@
 <!-- Modification History -->
 
+<!-- 08/18/2014         Dharmendra Kumar        Add Was targets                           -->
 <!-- 04/27/2014         Dharmendra Kumar  	Added Target to Copy Packages             -->
 <!-- 04/20/2014		Dharmendra Kumar	Initial Coding to Start and Stop Services -->
-<!-- version 2014.0.1 -->
+<!-- version 2014.0.2 -->
 <project name="CommonTasks" basedir=".." default="MachineInfo">
 <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+	<record name="log/SystemOut.debug-${timestamp-HHmm}.log" loglevel="verbose" />
 	<tstamp>
 		<format property="timestamp" pattern="yyyyMMdd"/>
 		<format property="timestamp-HHmm" pattern="yyyyMMdd-HHmm"/>
@@ -12,6 +14,18 @@
 	
 	<property environment="env" />
 	<property file="cfg/commontasks.cfg" />
+	<property name="failonerror" value="true" />
+	
+	<path id="was.runtime">
+		<fileset dir="${washome}/lib">
+    			<include name="**/*.jar" />
+		</fileset>
+		<fileset dir="${washome}/plugins">
+	    		<include name="**/*.jar" />
+		</fileset>
+	</path>
+	<property name="was.cp" value="${toString:was.runtime}" />
+
 	<target name="MachineInfo">
 		<echo message="TIMESTAMP : ${timestamp-HHmm}"/>
 		<echo message="SERVER    : ${env.COMPUTERNAME}" />
@@ -20,7 +34,7 @@
 	</target>
 		
 	<target name="StopService" >
-		<exec executable="cmd" failonerror="true" >
+		<exec executable="cmd" failonerror="${failonerror}" >
 			<arg value="/c" />
 			<arg value="sc stop &quot;${servicename}&quot;" />
 		</exec>
@@ -28,7 +42,7 @@
 	</target>
 	
 	<target name="StartService" >
-		<exec executable="cmd" failonerror="true" >
+		<exec executable="cmd" failonerror="${failonerror}" >
 			<arg value="/c" />
 			<arg value="sc start &quot;${servicename}&quot;" />
 		</exec>
@@ -37,6 +51,35 @@
 	
 	<target name="RestartService" depends="StopService, StartService" >
 		<echo message="Restart Completed ..!" />
+	</target>
+
+	<target name="StopWASServer">
+	<taskdef name="wsStopServer" classname="com.ibm.websphere.ant.tasks.StopServer" classpath="${was.cp}" />
+   	<wsStopServer
+        	server="${servername}"
+        	conntype="SOAP"
+        	port="${serversoapport}"
+        	username="${wsadminuser}"
+        	password="${wsadminpwd}"
+        	wasHome="${wshome}"
+        	failonerror="${failonerror}"
+   	/>
+	</target>
+
+	<target name="StartWASServer">
+	<taskdef name="wsStartServer" classname="com.ibm.websphere.ant.tasks.StartServer" classpath="${was.cp}" />
+   	<wsStartServer
+        	server="${servername}"
+        	profileName="${profilename}"
+        	username="${wsadminuser}"
+        	password="${wsadminpwd}"
+        	wasHome="${wshome}"
+        	failonerror="${failonerror}"
+   	/>
+	</target>
+
+	<target name="RestartServer" depends="StopServer, StartServer">
+        	<echo message="Restart of ${servername} completesd..!!" />
 	</target>
 
 	<target name="CopyPackages">
