@@ -2,9 +2,14 @@
 
 <!-- 04/27/2014         Dharmendra Kumar  	Added Target to Copy Packages             -->
 <!-- 04/20/2014		Dharmendra Kumar	Initial Coding to Start and Stop Services -->
-<!-- version 2014.0.3 -->
+<!-- version 2014.0.4 -->
 <project name="CommonTasks" basedir=".." default="MachineInfo">
-<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+	<taskdef resource="net/sf/antcontrib/antlib.xml">
+		<classpath>
+			<pathelement location="${ant.home}/lib/ant-contrib.jar"/>
+		</classpath>
+	</taskdef>
+
 	<tstamp>
 		<format property="timestamp" pattern="yyyyMMdd"/>
 		<format property="timestamp-HHmm" pattern="yyyyMMdd-HHmm"/>
@@ -18,7 +23,7 @@
 		<echo message="TIMESTAMP : ${timestamp-HHmm}"/>
 		<echo message="SERVER    : ${env.COMPUTERNAME}" />
 		<echo message="DOMAIN    : ${env.USERDOMAIN}" />
-		<echo message="USER      : ${env.USERNAME}" />		
+		<echo message="USER      : ${env.USERNAME}" />
 	</target>
 		
 	<target name="StopService" >
@@ -48,12 +53,17 @@
 	</target>
 	
 	<target name="GetLatestWar">
-	    <last id="archive.id">
-			<fileset dir="${sourcedir}">
+		<first id="archive.id">
+		<sort>
+			<fileset dir="${sourcedir}" >
 				<include name="${warname}-${version}*.war"/>
-		    </fileset>
-	    </last>
-	    <basename property="versioned.warname" file="${toString:archive.id}" suffix=".war"/>
+			</fileset>
+			<reverse xmlns="antlib:org.apache.tools.ant.types.resources.comparators">
+				<date />
+			</reverse>
+		</sort>
+		</first>
+		<basename property="versioned.warname" file="${toString:archive.id}" suffix=".war"/>
 	    <copy file="${sourcedir}/${versioned.warname}.war" todir="${targetdir}" overwrite="true" preservelastmodified="true" verbose="true" />
    </target>
 </project>
