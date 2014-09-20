@@ -1,8 +1,14 @@
 <project name="DeployOnJboss" basedir=".." default="MachineInfo">
-<taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+	<taskdef resource="net/sf/antcontrib/antlib.xml">
+		<classpath>
+			<pathelement location="${ant.home}/lib/ant-contrib.jar"/>
+		</classpath>
+	</taskdef>
 <property file="cfg/jboss-deploy.cfg" />
 <property environment="env" />
 <property name="failonerror" value="true" />
+<property name="deploy" value="deploy" />
+<property name="towarname" value="warname" />
 	
 <tstamp>
 	<format property="timestamp" pattern="yyyyMMdd"/>
@@ -41,31 +47,59 @@
 	<echo message="Restart of ${jboss-service} Completed." />
 </target>
 
-<target name="GetLatestWar">
-	<last id="archive.id">
-		<fileset dir="${warlocation}">
-			<include name="${warname}-*.war"/>
+<target name="GetLatestWar" if="warlocation">
+	<first id="archive.id">
+	<sort>
+		<fileset dir="${sourcedir}" >
+			<include name="${warname}-${version}*.war"/>
 		</fileset>
-	</last>
+		<reverse xmlns="antlib:org.apache.tools.ant.types.resources.comparators">
+			<date />
+		</reverse>
+	</sort>
+	</first>
 	<basename property="versioned.warname" file="${toString:archive.id}" suffix=".war"/>
-	<copy file="${warlocation}/${versioned.warname}.war" todir="war" overwrite="true" preservelastmodified="true" force="true" verbose="true" />
-	<move file="war/${versioned.warname}.war" tofile="war/${warname}.war" preservelastmodified="true" />
+	<delete dir="${targetdir}" />
+	<copy file="${sourcedir}/${versioned.warname}.war" todir="${targetdir}" overwrite="true" preservelastmodified="true" verbose="true" />
 </target>
 
-<target name="InstallNewWar" depends="GetLatestWar">
-	<copy file="war/${warname}.war" todir="${appl-webapps-dir}/deploy" overwrite="true" preservelastmodified="true" force="true" />
+<target name="CopyPackage" if="packagesource">
+	<delete dir="war" />
+        <copy todir="war" overwrite="true">
+                <fileset dir="${packagesource}" >
+                        <include name="*.war" />
+                </fileset>
+        </copy>
+</target>
+
+<target name="InstallNewWar">
+	<fileset id="dir.contents" dir="war" includes="**"/>
+	<property name="prop.dir.contents" refid="dir.contents"/>
+	<basename property="versioned.warname" file="${prop.dir.contents}" suffix=".war"/>
+
+	<copy file="${versioned.warname}.war" tofile="${server-home}/${deploy}/${towarname}.war" overwrite="true" preservelastmodified="true" force="true" />
 	
-	<echo message="Cleaning up temprory files..." />
+	<echo message="Cleaning up temprory files and directories..." />
 	<!-- Cleanup the directories -->
 	<for list="${dir-to-cleanup}" param = "tempdir">
 		<sequential>
-			<echo message="Cleaning up ${appl-webapps-dir}/@{tempdir} directory." />
-			<mkdir dir="${appl-webapps-dir}/@{tempdir}" />
-			<delete includeemptydirs="true">
-				<fileset dir="${appl-webapps-dir}/@{tempdir}">
-					<exclude name="*-9s" />
-				</fileset>
-			</delete>
+			<if>
+			<available file="@{tempdir}" type="dir" />
+			<then>
+				<echo message="Cleaning up ${server-home}/@{tempdir} directory." />
+				<mkdir dir="${server-home}/@{tempdir}" />
+				<delete includeemptydirs="true">
+					<fileset dir="${server-home}/@{tempdir}" />
+				</delete>
+			</then>
+			</if>
+			<if>
+			<available file="@{tempdir}"/>
+			<then>
+				<echo message="Cleaning up ${server-home}/@{tempdir} file." />
+				<delete file="${server-home}/@{tempdir}" />
+			</then>
+			</if>
 		</sequential>
 	</for>
 </target>
@@ -82,7 +116,7 @@
 </target>
 	
 
-<target name="Install" depends="MachineInfo, StopService, GetLatestWar, InstallNewWar, StartService" >
+<target name="Install" depends="MachineInfo, StopService, GetLatestWar, CopyPackage, InstallNewWar, StartService" >
 	<echo message="Install completed for ${warname}" />
 	<property name="subject" value="Installation Completed for ${versioned.warname} on ${env.COMPUTERNAME}" />
 		<antcall target="EmailNotification" />
