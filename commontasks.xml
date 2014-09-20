@@ -64,6 +64,7 @@
 		</sort>
 		</first>
 		<basename property="versioned.warname" file="${toString:archive.id}" suffix=".war"/>
+		<delete dir="${targetdir}" />
 	    <copy file="${sourcedir}/${versioned.warname}.war" todir="${targetdir}" overwrite="true" preservelastmodified="true" verbose="true" />
    </target>
 </project>
