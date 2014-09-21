@@ -8,7 +8,7 @@
 <property environment="env" />
 <property name="failonerror" value="true" />
 <property name="deploy" value="deploy" />
-<property name="towarname" value="warname" />
+<property name="towarname" value="${warname}" />
 	
 <tstamp>
 	<format property="timestamp" pattern="yyyyMMdd"/>
@@ -60,31 +60,27 @@
 	</first>
 	<basename property="versioned.warname" file="${toString:archive.id}" suffix=".war"/>
 	<delete dir="${targetdir}" />
-	<copy file="${sourcedir}/${versioned.warname}.war" todir="${targetdir}" overwrite="true" preservelastmodified="true" verbose="true" />
+	<copy file="${sourcedir}/${versioned.warname}.war" tofile="war/${warname}.war" overwrite="true" preservelastmodified="true" verbose="true" />
 </target>
 
 <target name="CopyPackage" if="packagesource">
 	<delete dir="war" />
-        <copy todir="war" overwrite="true">
+        <copy todir="war" overwrite="true" preservelastmodified="true">
                 <fileset dir="${packagesource}" >
-                        <include name="*.war" />
+                        <include name="${warname}.war" />
                 </fileset>
         </copy>
 </target>
 
 <target name="InstallNewWar">
-	<fileset id="dir.contents" dir="war" includes="**"/>
-	<property name="prop.dir.contents" refid="dir.contents"/>
-	<basename property="versioned.warname" file="${prop.dir.contents}" suffix=".war"/>
-
-	<copy file="${versioned.warname}.war" tofile="${server-home}/${deploy}/${towarname}.war" overwrite="true" preservelastmodified="true" force="true" />
+	<copy file="war/${warname}.war" tofile="${server-home}/${deploy}/${towarname}.war" overwrite="true" preservelastmodified="true" force="true" />
 	
 	<echo message="Cleaning up temprory files and directories..." />
 	<!-- Cleanup the directories -->
 	<for list="${dir-to-cleanup}" param = "tempdir">
 		<sequential>
 			<if>
-			<available file="@{tempdir}" type="dir" />
+			<available file="${server-home}/@{tempdir}" type="dir" />
 			<then>
 				<echo message="Cleaning up ${server-home}/@{tempdir} directory." />
 				<mkdir dir="${server-home}/@{tempdir}" />
@@ -92,13 +88,15 @@
 					<fileset dir="${server-home}/@{tempdir}" />
 				</delete>
 			</then>
-			</if>
+			<else>
 			<if>
-			<available file="@{tempdir}"/>
+			<available file="${server-home}/@{tempdir}"/>
 			<then>
 				<echo message="Cleaning up ${server-home}/@{tempdir} file." />
 				<delete file="${server-home}/@{tempdir}" />
 			</then>
+			</if>
+			</else>
 			</if>
 		</sequential>
 	</for>
@@ -118,7 +116,7 @@
 
 <target name="Install" depends="MachineInfo, StopService, GetLatestWar, CopyPackage, InstallNewWar, StartService" >
 	<echo message="Install completed for ${warname}" />
-	<property name="subject" value="Installation Completed for ${versioned.warname} on ${env.COMPUTERNAME}" />
+	<property name="subject" value="Installation Completed for ${warname} on ${env.COMPUTERNAME}" />
 		<antcall target="EmailNotification" />
 </target>
 </project>
