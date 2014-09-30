@@ -19,6 +19,8 @@
 	<property file="cfg/commontasks-${version}.cfg" />
 	<property file="cfg/commontasks.cfg" />
 	<property name="failonerror" value="true" />
+	<property name="sleeptime" value="20" />
+	
 	<target name="MachineInfo">
 		<echo message="TIMESTAMP : ${timestamp-HHmm}"/>
 		<echo message="SERVER    : ${env.COMPUTERNAME}" />
@@ -31,7 +33,7 @@
 			<arg value="/c" />
 			<arg value="sc stop &quot;${servicename}&quot;" />
 		</exec>
-		<sleep seconds="10"/>
+		<sleep seconds="${sleeptime}"/>
 	</target>
 	
 	<target name="StartService" >
@@ -39,7 +41,7 @@
 			<arg value="/c" />
 			<arg value="sc start &quot;${servicename}&quot;" />
 		</exec>
-		<sleep seconds="10"/>
+		<sleep seconds="${sleeptime}"/>
 	</target>
 	
 	<target name="RestartService" depends="StopService, StartService" >
